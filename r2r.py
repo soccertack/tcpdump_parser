@@ -1,15 +1,17 @@
 #!/usr/bin/python
 
 import collections
+import sys
 
 SEC_TO_USEC = 1000*1000
 MIN_TO_USEC = 60 * SEC_TO_USEC
 HOUR_TO_USEC = 60 * MIN_TO_USEC
 
-f = open("tcp_rr_dump.txt")
+f = open(sys.argv[1])
 prev_recv = 0
 r2r_dic = {}
 r2s_dic = {}
+
 while True:
         line = f.readline()
         if len(line) == 0:
@@ -29,8 +31,8 @@ while True:
 
         total = usec
         total += SEC_TO_USEC*sec
-        total += MIN_TO_USEC*60*minute
-        total += HOUR_TO_USEC*60*60*hour
+        total += MIN_TO_USEC*minute
+        total += HOUR_TO_USEC*hour
 
         if sp[2][0] == 'c':
                 if prev_recv != 0:
@@ -41,17 +43,21 @@ while True:
                                 r2r_dic[r2r] = 1
 
                 prev_recv = total
+		prev_r_line = line
 
-        elif sp[2][0] == 'b':
+        #elif sp[2][0] == 'b':
+	else:
                 if prev_recv != 0:
                         r2s = total - prev_recv
                         if r2s in r2s_dic:
                                 r2s_dic[r2s] +=1
                         else:
                                 r2s_dic[r2s] = 1
+		prev_s_line = line
 
 sorted_r2r_dic = collections.OrderedDict(sorted(r2r_dic.items()))
 sorted_r2s_dic = collections.OrderedDict(sorted(r2s_dic.items()))
+
 print "r2r"
 for num, times in sorted_r2r_dic.items():
         print "%s\t%d" % (num, times)
