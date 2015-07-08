@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from __future__ import division
 import collections
 import sys
 
@@ -12,6 +13,10 @@ prev_recv = 0
 r2r_dic = {}
 r2s_dic = {}
 
+sum_of_r2r = 0
+num_of_r2r = 0
+sum_of_r2s = 0
+num_of_r2s = 0
 while True:
         line = f.readline()
         if len(line) == 0:
@@ -34,9 +39,11 @@ while True:
         total += MIN_TO_USEC*minute
         total += HOUR_TO_USEC*hour
 
-        if sp[2] == "10.10.1.1.49261":
+        if "10.10.1.1." in sp[2] or sp[2][0] == 'c':
                 if prev_recv != 0:
                         r2r = total - prev_recv
+			sum_of_r2r += r2r
+			num_of_r2r += 1
                         if r2r in r2r_dic:
                                 r2r_dic[r2r] +=1
                         else:
@@ -49,6 +56,8 @@ while True:
 	else:
                 if prev_recv != 0:
                         r2s = total - prev_recv
+			sum_of_r2s += r2s
+			num_of_r2s += 1
                         if r2s in r2s_dic:
                                 r2s_dic[r2s] +=1
                         else:
@@ -58,6 +67,7 @@ while True:
 sorted_r2r_dic = collections.OrderedDict(sorted(r2r_dic.items()))
 sorted_r2s_dic = collections.OrderedDict(sorted(r2s_dic.items()))
 
+
 print "r2r"
 for num, times in sorted_r2r_dic.items():
         print "%s\t%d" % (num, times)
@@ -65,3 +75,6 @@ for num, times in sorted_r2r_dic.items():
 print "r2s"
 for num, times in sorted_r2s_dic.items():
         print "%s\t%d" % (num, times)
+
+print "r2r avg is " + str(sum_of_r2r/num_of_r2r)
+print "r2s avg is " + str(sum_of_r2s/num_of_r2s)
