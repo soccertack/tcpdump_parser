@@ -34,7 +34,7 @@ while True:
         total += MIN_TO_USEC*minute
         total += HOUR_TO_USEC*hour
 
-        if sp[2][0] == 'c':
+        if sp[2] == "10.10.1.1.49261":
                 if prev_recv != 0:
                         r2r = total - prev_recv
                         if r2r in r2r_dic:
