@@ -1,32 +1,77 @@
 #!/usr/bin/python
 
 from __future__ import division
+from enum import Enum
 import collections
 import sys
+import statistics
 
 SEC_TO_USEC = 1000*1000
 MIN_TO_USEC = 60 * SEC_TO_USEC
 HOUR_TO_USEC = 60 * MIN_TO_USEC
 
-f = open(sys.argv[1])
-prev_recv = 0
-r2r_dic = {}
-r2s_dic = {}
+'''
+check netperf_rr packet (length, sec, x:y)
+1. host recv
+  get host recv time
+  change to host send or guest recv
 
-sum_of_r2r = 0
-num_of_r2r = 0
-sum_of_r2s = 0
-num_of_r2s = 0
-while True:
-        line = f.readline()
-        if len(line) == 0:
-                break
+2. guest recv
+  get guest recv time
+  get diff from 1.
+  change to guest send
+
+3. guest send
+  get guest send time
+  get diff from 2.
+  change to host recv
+
+4. host send
+  get host send time
+  put it in the list
+  get diff from 3.
+  change to host recv
+  '''
+
+hr_hr_raw = []
+hr_hs_raw = []
+hr_gr_raw = []
+gr_gs_raw = []
+gs_hs_raw = []
+
+class State(Enum):
+        host_recv = 1
+        guest_recv = 2
+        guest_send = 3
+        host_send = 4
+
+
+def myreadline(cur_state):
+        if cur_state == State.guest_recv or cur_state == State.guest_send:
+                line = f_guest.readline()
+        else:
+                line = f_host.readline()
+
+        return line
+
+def isCorrectLine(line):
+
         line = line.rstrip('\n')
         sp = line.split(' ')
 
         if (sp[-2]+' '+sp[-1]) != "length 1":
-                continue
+               return False 
+        
+        if sp[7] != "seq":
+               return False 
 
+        seq_str = str(seq_num) + ":" + str(seq_num+1) + ","
+        if sp[8] != seq_str: 
+               return False 
+
+        return True 
+
+def getts(sp):
         timestamp = sp[0].split('.')
         usec = int(timestamp[1])
         low_resol = timestamp[0].split(':')
@@ -38,43 +83,96 @@ while True:
         total += SEC_TO_USEC*sec
         total += MIN_TO_USEC*minute
         total += HOUR_TO_USEC*hour
+        return total
 
-        if "10.10.1.1." in sp[2] or sp[2][0] == 'c':
-                if prev_recv != 0:
-                        r2r = total - prev_recv
-			sum_of_r2r += r2r
-			num_of_r2r += 1
-                        if r2r in r2r_dic:
-                                r2r_dic[r2r] +=1
+
+
+def main():
+        global has_guest
+        has_guest = False
+        global f_host
+        f_host = open(sys.argv[1])
+        if len(sys.argv) == 3:
+                global f_guest
+                f_guest = open(sys.argv[2])
+                has_guest = True
+                print ("True")
+
+        cur_state = State.host_recv
+
+        host_recv = 0
+        guest_recv = 0
+        guest_send = 0
+        host_send = 0
+        global seq_num
+        seq_num = 1
+
+        while True:
+                line = myreadline(cur_state)
+
+                if len(line) == 0:
+                        break; 
+
+                if isCorrectLine(line) == False:
+                        continue
+
+                line = line.rstrip('\n')
+                sp = line.split(' ')
+                total = getts(sp)
+
+                if cur_state == State.host_recv:
+                        if host_recv != 0:
+                                r2r = total - host_recv
+                                hr_hr_raw.append(r2r)
+                        host_recv = total
+                        if has_guest:
+                                next_state = State.guest_recv
                         else:
-                                r2r_dic[r2r] = 1
+                                next_state = State.host_send
 
-                prev_recv = total
-		prev_r_line = line
+                elif cur_state == State.guest_recv:
+                        guest_recv = total
+                        timediff = guest_recv - host_recv
+                        hr_gr_raw.append(timediff)
+                        next_state = State.guest_send
 
-        #elif sp[2][0] == 'b':
-	else:
-                if prev_recv != 0:
-                        r2s = total - prev_recv
-			sum_of_r2s += r2s
-			num_of_r2s += 1
-                        if r2s in r2s_dic:
-                                r2s_dic[r2s] +=1
-                        else:
-                                r2s_dic[r2s] = 1
-		prev_s_line = line
+                elif cur_state == State.guest_send:
+                        guest_send = total
+                        timediff = guest_send - guest_recv
+                        gr_gs_raw.append(timediff)
+                        next_state = State.host_send
 
-sorted_r2r_dic = collections.OrderedDict(sorted(r2r_dic.items()))
-sorted_r2s_dic = collections.OrderedDict(sorted(r2s_dic.items()))
+                elif cur_state == State.host_send:
+                        host_send = total
+                        timediff = host_send - host_recv
+                        hr_hs_raw.append(timediff)
+                        if has_guest:
+                                gs_hs = host_send - guest_send
+                                gs_hs_raw.append(gs_hs)
+                        next_state = State.host_recv
+                        seq_num += 1
+                cur_state = next_state
 
 
-print "r2r"
-for num, times in sorted_r2r_dic.items():
-        print "%s\t%d" % (num, times)
+        print ("host recv to host recv") 
+        a = statistics.mean(hr_hr_raw)
+        print (a)
 
-print "r2s"
-for num, times in sorted_r2s_dic.items():
-        print "%s\t%d" % (num, times)
+        print ("host recv to host send") 
+        a = statistics.mean(hr_hs_raw)
+        print (a)
 
-print "r2r avg is " + str(sum_of_r2r/num_of_r2r)
-print "r2s avg is " + str(sum_of_r2s/num_of_r2s)
+        if has_guest:
+                print ("host recv to guest recv") 
+                a = statistics.mean(hr_gr_raw)
+                print (a)
+                print ("guest recv to guest send") 
+                a = statistics.mean(gr_gs_raw)
+                print (a)
+                print ("guest send to host send") 
+                a = statistics.mean(gs_hs_raw)
+                print (a)
+
+
+if __name__ == "__main__":
+                main()
