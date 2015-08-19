@@ -1,0 +1,19 @@
+00:46:17.180030 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [S], seq 2440573478, win 29200, options [mss 1460,sackOK,TS val 334774 ecr 0,nop,wscale 7], length 0
+00:46:17.180066 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [S.], seq 133676276, ack 2440573479, win 28960, options [mss 1460,sackOK,TS val 233129 ecr 334774,nop,wscale 7], length 0
+00:46:17.180180 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 1, win 229, options [nop,nop,TS val 334774 ecr 233129], length 0
+00:46:17.180189 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [P.], seq 1:94, ack 1, win 229, options [nop,nop,TS val 334774 ecr 233129], length 93
+00:46:17.180207 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], ack 94, win 227, options [nop,nop,TS val 233129 ecr 334774], length 0
+00:46:17.180388 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], seq 1:7241, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334774], length 7240
+00:46:17.180410 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], seq 7241:14481, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334774], length 7240
+00:46:17.180518 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 7241, win 342, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180535 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], seq 14481:24617, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334775], length 10136
+00:46:17.180552 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [P.], seq 24617:28961, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334775], length 4344
+00:46:17.180583 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 14481, win 455, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180596 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], seq 28961:39097, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334775], length 10136
+00:46:17.180684 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 24617, win 613, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180695 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [FP.], seq 39097:41562, ack 94, win 227, options [nop,nop,TS val 233129 ecr 334775], length 2465
+00:46:17.180709 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 28961, win 681, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180733 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 39097, win 839, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180820 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [.], ack 41563, win 878, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180832 IP 10.10.1.1.36441 > 10.10.1.120.http: Flags [F.], seq 94, ack 41563, win 878, options [nop,nop,TS val 334775 ecr 233129], length 0
+00:46:17.180846 IP 10.10.1.120.http > 10.10.1.1.36441: Flags [.], ack 95, win 227, options [nop,nop,TS val 233129 ecr 334775], length 0

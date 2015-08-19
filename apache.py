@@ -19,6 +19,7 @@ dic_fin = []
 class State(Enum):
         none = 0
         sync_start = 1
+        sync_ack = 8
         sync_end = 2
         req_recv = 3
         resp_1 = 4
@@ -82,11 +83,14 @@ def main():
                 if "[S]" in sp[6]:
                         s_cnt += 1
 
-                if cur_state == State.none:
+                if cur_state == State.none:     # Wait for [S] packet
                         if "[S]" in sp[6]:
                                 sync_start = total
                                 next_state = State.sync_start
-                elif cur_state == State.sync_start:
+                if cur_state == State.sync_start: # Wait for SYN_ACK packet
+                        if "[S.]" in sp[6]:
+                                next_state = State.sync_ack
+                elif cur_state == State.sync_ack: # Wait for ACK packet
                         if "[.]" in sp[6]:
                                 sync_end = total
                                 next_state = State.sync_end
@@ -187,15 +191,15 @@ def main():
         a = statistics.mean(dic_sync)
         print (a)
 
-        print ("Get request")
+        print ("Recv request")
         a = statistics.mean(dic_req_recv)
         print (a)
 
-        print ("Get 1st resp")
+        print ("Send 1st resp")
         a = statistics.mean(dic_resp_1)
         print (a)
 
-        print ("Get last resp")
+        print ("Send last resp")
         a = statistics.mean(dic_resp_f)
         print (a)
 
