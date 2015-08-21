@@ -11,6 +11,7 @@ MIN_TO_USEC = 60 * SEC_TO_USEC
 HOUR_TO_USEC = 60 * MIN_TO_USEC
 
 dic_sync = []
+dic_sync_ack = []
 dic_req_recv = []
 dic_resp_1 = []
 dic_resp_f = []
@@ -56,6 +57,7 @@ def main():
         cur_state = State.none
 
         sync_start = 0
+        sync_ack = 0
         sync_end = 0
         req_recv = 0
         resp_1 = 0
@@ -90,11 +92,15 @@ def main():
                 if cur_state == State.sync_start: # Wait for SYN_ACK packet
                         if "[S.]" in sp[6]:
                                 next_state = State.sync_ack
+                                sync_ack = total
+                                diff = sync_ack - sync_start
+                                #print (diff)
+                                dic_sync_ack.append(diff)
                 elif cur_state == State.sync_ack: # Wait for ACK packet
                         if "[.]" in sp[6]:
                                 sync_end = total
                                 next_state = State.sync_end
-                                diff = sync_end - sync_start
+                                diff = sync_end - sync_ack
                                 #print (diff)
                                 dic_sync.append(diff)
                 elif cur_state == State.sync_end:
@@ -122,13 +128,11 @@ def main():
                                 last_resp = total
                                 next_state = State.resp_f
                                 diff = last_resp - resp_1
-                                #print (diff)
                                 dic_resp_f.append(diff)
                                 f_cnt += 1
                         elif "F." in sp[6]:
                                 next_state=State.resp_f
                                 diff = last_resp - resp_1
-                                #print (diff)
                                 dic_resp_f.append(diff)
                                 f_cnt += 1
 
@@ -187,7 +191,11 @@ def main():
         print ("Total Transaction")
         print (len(dic_fin))
 
-        print ("Sync")
+        print ("Sync to Sync Ack")
+        a = statistics.mean(dic_sync_ack)
+        print (a)
+
+        print ("Sync ack to Sync Fin")
         a = statistics.mean(dic_sync)
         print (a)
 
