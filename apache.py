@@ -74,6 +74,8 @@ def main():
                 line = myreadline(cur_state)
 
                 if len(line) == 0:
+                        if cur_state == State.fin:
+                                tran_cnt += 1
                         break; 
 
                 line = line.rstrip('\n')
@@ -189,7 +191,7 @@ def main():
                 cur_state = next_state
 
         print ("Total Transaction")
-        print (len(dic_fin))
+        print (tran_cnt)
 
         print ("Sync to Sync Ack")
         a = statistics.mean(dic_sync_ack)
