@@ -28,12 +28,6 @@ class State(Enum):
         resp_f = 6
         fin = 7
 
-
-def myreadline(cur_state):
-        line = f_host.readline()
-
-        return line
-
 def getts(sp):
         timestamp = sp[0].split('.')
         usec = int(timestamp[1])
@@ -42,180 +36,140 @@ def getts(sp):
         minute = int(low_resol[1])
         hour = int(low_resol[0])
 
-        total = usec
-        total += SEC_TO_USEC*sec
-        total += MIN_TO_USEC*minute
-        total += HOUR_TO_USEC*hour
-        return total
+        timestamp = usec
+        timestamp += SEC_TO_USEC*sec
+        timestamp += MIN_TO_USEC*minute
+        timestamp += HOUR_TO_USEC*hour
+        return timestamp
 
+def hasFlag(flag, sp):
+        if flag in sp[6]:
+                return True
+        return False
 
+debug = False
+def my_print(string):
+        if debug == True:
+                print (string)
 
 def main():
-        global f_host
         f_host = open(sys.argv[1])
 
+        # Init local variables
         cur_state = State.none
-
-        sync_start = 0
-        sync_ack = 0
-        sync_end = 0
-        req_recv = 0
-        resp_1 = 0
-        resp_f = 0
-        f_cnt = 0
-        global seq_num
-        seq_num = 1
-
-        tmp_cnt = 0
-        s_cnt = 0
+        ts_sync_start = 0
+        ts_sync_ack = 0
+        ts_sync_end = 0
+        ts_req_recv = 0
+        ts_resp_1 = 0
         tran_cnt = 0
 
         while True:
-                line = myreadline(cur_state)
+                line = f_host.readline()
 
                 if len(line) == 0:
-                        if cur_state == State.fin:
-                                tran_cnt += 1
                         break; 
 
                 line = line.rstrip('\n')
                 sp = line.split(' ')
-                total = getts(sp)
+                timestamp = getts(sp)
 
                 if sp[1] != "IP":
                         continue
-                if "[S]" in sp[6]:
-                        s_cnt += 1
 
-                if cur_state == State.none:     # Wait for [S] packet
-                        if "[S]" in sp[6]:
-                                sync_start = total
-                                next_state = State.sync_start
-                if cur_state == State.sync_start: # Wait for SYN_ACK packet
-                        if "[S.]" in sp[6]:
-                                next_state = State.sync_ack
-                                sync_ack = total
-                                diff = sync_ack - sync_start
-                                #print (diff)
-                                dic_sync_ack.append(diff)
-                elif cur_state == State.sync_ack: # Wait for ACK packet
-                        if "[.]" in sp[6]:
-                                sync_end = total
-                                next_state = State.sync_end
-                                diff = sync_end - sync_ack
-                                #print (diff)
-                                dic_sync.append(diff)
-                elif cur_state == State.sync_end:
-                        if "[P.]" in sp[6]:
-                                req_recv = total
-                                next_state = State.req_recv
-                                diff = req_recv - sync_end
-                                #print (diff)
-                                dic_req_recv.append(diff)
-                elif cur_state == State.req_recv:
-                        if "seq" in sp[7]:
-                                resp_1 = total
-                                next_state = State.resp_1
-                                diff = resp_1 - req_recv
-                                #print (diff)
-                                dic_resp_1.append(diff)
-                elif cur_state == State.resp_1:
-                        if "[P.]" in sp[6]:
-                                resp_m = total
-                                next_state = State.resp_m
-                elif cur_state == State.resp_m: # last response packet
-                        if ("[P.]" in sp[6]):
-                                last_resp = total
-                        elif ("FP." in sp[6]):
-                                last_resp = total
-                                next_state = State.resp_f
-                                diff = last_resp - resp_1
-                                dic_resp_f.append(diff)
-                                f_cnt += 1
-                        elif "F." in sp[6]:
-                                next_state=State.resp_f
-                                diff = last_resp - resp_1
-                                dic_resp_f.append(diff)
-                                f_cnt += 1
-
-                elif cur_state == State.resp_f: # Wait for FIN from client. The second FIN
-                        if "F." in sp[6]:
-                                f_cnt+= 1
-                        if f_cnt == 2:
-                                next_state = State.fin
-                                f_cnt = 0
-
-                        if "[S]" in sp[6]: # Last FIN is coming after [S]. Count [S] as an end of transaction
-                                sync_start = total
-                                diff = sync_start - last_resp
-                                #print ("---------")
-                                dic_fin.append (diff)
+                if cur_state == State.none:             # Wait for SYN packet
+                        if hasFlag("[S]", sp):
+                                ts_sync_start = timestamp
                                 next_state = State.sync_start
                                 tran_cnt += 1
-                                f_cnt = 0
-                                if s_cnt != tran_cnt+1: #s_cnt is already increased by one at the top of the while loop
-                                        print (s_cnt)
-                                        print (tran_cnt)
-                                        print(line)
-                                        break;
+                elif cur_state == State.sync_start:     # Wait for SYN_ACK packet
+                        if hasFlag("[S.]", sp):
+                                next_state = State.sync_ack
+                                ts_sync_ack = timestamp
+                                diff = ts_sync_ack - ts_sync_start
+                                my_print(diff)
+                                dic_sync_ack.append(diff)
+                elif cur_state == State.sync_ack:       # Wait for ACK packet
+                        if hasFlag("[.]", sp):
+                                ts_sync_end = timestamp
+                                next_state = State.sync_end
+                                diff = ts_sync_end - ts_sync_ack
+                                my_print(diff)
+                                dic_sync.append(diff)
+                elif cur_state == State.sync_end:       # Wait for request packet 
+                        if hasFlag("[P.]", sp):
+                                ts_req_recv = timestamp
+                                next_state = State.req_recv
+                                diff = ts_req_recv - ts_sync_end
+                                my_print(diff)
+                                dic_req_recv.append(diff)
+                elif cur_state == State.req_recv:       # Wait for the first response
+                        if "seq" in sp[7]:
+                                ts_resp_1 = timestamp
+                                next_state = State.resp_1
+                                diff = ts_resp_1 - ts_req_recv
+                                my_print (diff)
+                                dic_resp_1.append(diff)
+                elif cur_state == State.resp_1:         # Wait for intermediate [P] packet
+                        if hasFlag("[P.]", sp):
+                                next_state = State.resp_m
+                elif cur_state == State.resp_m:         # Wait for the last response and the first FIN
+
+                        if hasFlag("P", sp):
+                                last_resp = timestamp
+                        if hasFlag("F", sp):
+                                next_state = State.fin
+                                diff = last_resp - ts_resp_1
+                                dic_resp_f.append(diff)
+                                my_print (diff)
 
                 elif cur_state == State.fin:
-                        '''
-                        if "[.]" in sp[6]:
-                                fin = total
-                                diff = fin - last_resp 
-                                #print (diff)
-                                #print ("---------")
-                                dic_fin.append (diff)
-                                next_state = State.none
-                                tran_cnt += 1
-                                if s_cnt != tran_cnt:
-                                        print (s_cnt)
-                                        print (tran_cnt)
-                                        print(line)
-                                        break;
-                        '''
-                        if "[S]" in sp[6]: # Last FIN_ACK is coming after [S]. Count [S] as an end of transaction
-                                sync_start = total
-                                diff = sync_start - last_resp
-                                #print ("---------")
+                        if hasFlag("[S]", sp):          # Last FIN_ACK is coming after [S]. Count [S] as an end of transaction
+                                ts_sync_start = timestamp
+                                diff = ts_sync_start - last_resp
+                                my_print (diff)
                                 dic_fin.append (diff)
                                 next_state = State.sync_start
                                 tran_cnt += 1
-                                if s_cnt != tran_cnt+1: #s_cnt is already increased by one at the top of the while loop
-                                        print (s_cnt)
-                                        print (tran_cnt)
-                                        print(line)
-                                        break;
 
                 cur_state = next_state
 
-        print ("Total Transaction")
+        print ("Total Transaction", end="\t")
         print (tran_cnt)
 
-        print ("Sync to Sync Ack")
+        print ("Sync to Sync Ack", end="\t")
         a = statistics.mean(dic_sync_ack)
-        print (a)
+        print (round(a))
+        time_per_trasaction = a
 
-        print ("Sync ack to Sync Fin")
+        print ("Sync Ack to Ack ", end="\t")
         a = statistics.mean(dic_sync)
-        print (a)
+        print (round(a))
+        time_per_trasaction += a
 
-        print ("Recv request")
+        print ("Receive request ", end="\t")
         a = statistics.mean(dic_req_recv)
-        print (a)
+        print (round(a))
+        time_per_trasaction += a
 
-        print ("Send 1st resp")
+        print ("Send First resp ", end="\t")
         a = statistics.mean(dic_resp_1)
-        print (a)
+        print (round(a))
+        time_per_trasaction += a
 
-        print ("Send last resp")
+        print ("Send last resp  ", end="\t")
         a = statistics.mean(dic_resp_f)
-        print (a)
+        print (round(a))
+        time_per_trasaction += a
 
-        print ("End of transaction. acks and FINs")
+        print ("End of trans    ", end="\t")
         a = statistics.mean(dic_fin)
-        print (a)
+        print (round(a))
+        time_per_trasaction += a
+
+        print ("Time per transac", end="\t")
+        print (round(time_per_trasaction))
+
 
 
 if __name__ == "__main__":
