@@ -7,13 +7,12 @@ import sys
 import statistics
 from mycommon import *
 
-dic_sync = []
-dic_sync_ack = []
-dic_req_recv = []
-dic_resp_1 = []
-dic_resp_f = []
-dic_fin = []
 dic_diff = []
+dic_large_diff = []
+
+ts_recv_query = {}
+diff_per_port  = {}
+packet_cnt_per_port = {}
 
 class State(Enum):
         none = 0
@@ -38,6 +37,9 @@ def main():
         ts_resp_1 = 0
         packet_cnt = 0
         req_compl_cnt = 0
+        large_cnt = 0
+        large_interval = 0
+        client_port = 0
 
         while True:
                 line = f_host.readline()
@@ -53,27 +55,54 @@ def main():
                         continue
 
                 if "mysql" in sp[2]:                # packet sent from server
+                        client_port = sp[4].split('.')[1]
+                        client_port = client_port[:-1]        # Remove trailing :
+
                         ts_packet_sent = timestamp
+                        diff = ts_packet_sent - ts_recv_query[client_port] #ts_packet_recv
                         diff = ts_packet_sent - ts_packet_recv
+
+                        if client_port in diff_per_port:
+                                diff_per_port[client_port].append(diff)
+                        else:
+                                diff_per_port[client_port] = [diff]
+
+                        if client_port in packet_cnt_per_port:
+                                packet_cnt_per_port[client_port] += 1
+                        else:
+                                packet_cnt_per_port[client_port] = 1
+
                         dic_diff.append(diff)
                         my_print (diff)
+                        large_interval += 1
+                        if diff > 1000:
+                                my_print (large_interval)
+                                large_interval = 0
+                                my_print (line)
+                                large_cnt += 1
+                                dic_large_diff.append(diff)
                         packet_cnt += 1
                 
-                elif "mysql" in sp[4]:                # packet received in server
+                elif "mysql" in sp[4]:                # packet sent from the client
+                        client_port = sp[2].split('.')[1]
+                        
+                        ts_recv_query[client_port] = timestamp
                         ts_packet_recv = timestamp
                         if hasFlag("[.]", sp):
                                 req_compl_cnt += 1
                         
 
-        print ("Total # packets sent by server", end="\t")
-        print (packet_cnt)
+        for key in diff_per_port:
+                print ("<Port %s>" % key)
+                print ("num of packet: ", end="\t")
+                print (packet_cnt_per_port[key])
+                print ("Avg resp time: ", end="\t")
+                a = statistics.mean(diff_per_port[key])
+                print (round(a))
+                print ()
 
-        print ("Total # completed requests", end="\t")
-        print (req_compl_cnt)
-
-        print ("Avg response time", end="\t")
-        a = statistics.mean(dic_diff)
-        print (round(a))
+        print ("Total # large diff ", end="\t")
+        print (large_cnt)
 
 if __name__ == "__main__":
                 main()

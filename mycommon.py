@@ -27,6 +27,7 @@ def hasSeq(seq, sp):
                 return True
         return False
 
+debug = True
 debug = False
 def my_print(string):
         if debug == True:
