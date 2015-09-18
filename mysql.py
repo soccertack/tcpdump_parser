@@ -55,7 +55,8 @@ def main():
                         continue
 
                 if "mysql" in sp[2]:                # packet sent from server
-                        client_port = sp[4].split('.')[1]
+                        client_sp = sp[4].split('.')
+                        client_port = client_sp[len(client_sp)-1]
                         client_port = client_port[:-1]        # Remove trailing :
 
                         ts_packet_sent = timestamp
@@ -83,7 +84,8 @@ def main():
                         packet_cnt += 1
                 
                 elif "mysql" in sp[4]:                # packet sent from the client
-                        client_port = sp[2].split('.')[1]
+                        client_sp = sp[2].split('.')
+                        client_port = client_sp[len(client_sp)-1]
                         
                         ts_recv_query[client_port] = timestamp
                         if hasFlag("[.]", sp):
