@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.4
 
 from __future__ import division
 from enum import Enum
@@ -59,8 +59,7 @@ def main():
                         client_port = client_port[:-1]        # Remove trailing :
 
                         ts_packet_sent = timestamp
-                        diff = ts_packet_sent - ts_recv_query[client_port] #ts_packet_recv
-                        diff = ts_packet_sent - ts_packet_recv
+                        diff = ts_packet_sent - ts_recv_query[client_port]
 
                         if client_port in diff_per_port:
                                 diff_per_port[client_port].append(diff)
@@ -87,12 +86,12 @@ def main():
                         client_port = sp[2].split('.')[1]
                         
                         ts_recv_query[client_port] = timestamp
-                        ts_packet_recv = timestamp
                         if hasFlag("[.]", sp):
                                 req_compl_cnt += 1
                         
 
         for key in diff_per_port:
+                thefile = open('test_%s.txt'%key, 'w')
                 print ("<Port %s>" % key)
                 print ("num of packet: ", end="\t")
                 print (packet_cnt_per_port[key])
@@ -100,6 +99,8 @@ def main():
                 a = statistics.mean(diff_per_port[key])
                 print (round(a))
                 print ()
+                for item in diff_per_port[key]:
+                        thefile.write("%s\n" % item)
 
         print ("Total # large diff ", end="\t")
         print (large_cnt)
