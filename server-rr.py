@@ -39,6 +39,9 @@ def prepare():
 	child[0].sendline('export TZ=Etc/UTC')
 	child[0].expect('kvm-node.*')
 
+	child[0].sendline('rm tcp_rr_dump')
+	child[0].expect('kvm-node.*')
+
 	if target_virt_level < 1:
 		return
 
@@ -48,6 +51,9 @@ def prepare():
 	child[1].sendline('ssh root@10.10.1.100')
 	child[1].expect('L1.*$')
 
+	child[1].sendline('rm tcp_rr_dump')
+	child[1].expect('L1.*$')
+
 	if target_virt_level < 2:
 		return
 
@@ -55,6 +61,9 @@ def prepare():
 	child[2].sendline('')
 	child[2].expect('kvm-node.*')
 	child[2].sendline('ssh root@10.10.1.101')
+	child[2].expect('L2.*$')
+
+	child[2].sendline('rm tcp_rr_dump')
 	child[2].expect('L2.*$')
 
 def tcpdump_start():
