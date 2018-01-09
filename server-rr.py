@@ -120,8 +120,8 @@ while 1:
 		serversocket.send('tcpdump-ready')
 	elif buf == 'tcpdump-stop':
 		tcpdump_stop()
-		tcpdump_get_result()
 		serversocket.send('tcpdump-done')
 	elif buf == 'netperf-rr-done':
+		tcpdump_get_result()
 		break
 
